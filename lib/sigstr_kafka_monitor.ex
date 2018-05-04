@@ -1,8 +1,6 @@
-defmodule SigstrElixirKafka.Monitor do
+defmodule SigstrKafkaMonitor do
   use GenServer
   require Logger
-
-  require IEx
 
   @restart_wait_seconds 60
 
