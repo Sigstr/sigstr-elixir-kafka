@@ -1,5 +1,7 @@
 # SigstrElixirKafka
 
+This module allows you to connect to Kafka and consume messages without crashing your app when Kafka goes offline. In the event of a Kafka outage it will attempt to reconnect once a minute.
+
 ## Step 1
 
 Add KafkaEx and SigstrElixirKafka to `mix.exs`:
