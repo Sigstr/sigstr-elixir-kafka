@@ -5,7 +5,7 @@ defmodule SigstrKafkaMonitor do
   @restart_wait_seconds 60
 
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts)
+    GenServer.start_link(__MODULE__, opts, name: SigstrKafkaMonitor)
   end
 
   def init(child_specs) do
@@ -13,9 +13,9 @@ defmodule SigstrKafkaMonitor do
     refs = %{}
 
     Supervisor.start_link(
-      [{DynamicSupervisor, name: SigstrElixirKafka.Supervisor, strategy: :one_for_one}],
+      [{DynamicSupervisor, name: SigstrKafkaMonitor.DynamicSupervisor, strategy: :one_for_one}],
       strategy: :one_for_one,
-      name: SigstrElixirKafka.Monitor
+      name: SigstrKafkaMonitor.Supervisor
     )
 
     case System.get_env("KAFKA_SERVERS") do
@@ -48,7 +48,7 @@ defmodule SigstrKafkaMonitor do
     Application.start(:kafka_ex)
 
     {children, refs} =
-      case DynamicSupervisor.start_child(SigstrElixirKafka.Supervisor, child_spec) do
+      case DynamicSupervisor.start_child(SigstrKafkaMonitor.DynamicSupervisor, child_spec) do
         {:ok, pid} ->
           Logger.info("Monitor monitoring #{inspect(child_spec)} running at #{inspect(pid)}")
           ref = Process.monitor(pid)

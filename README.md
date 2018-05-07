@@ -18,7 +18,7 @@ end
 
 ## Step 2
 
-`mix deps.update`
+`mix deps.update sigstr_elixir_kafka`
 
 ## Step 3
 
@@ -52,7 +52,7 @@ kafka_genconsumers = [
 
 children = [
   # OTHER STUFF,
-  supervisor(SigstrKafkaMonitor, [kafka_genconsumers])
+  {SigstrKafkaMonitor, [kafka_genconsumers]}
 ]
 
 opts = [strategy: :one_for_one, name: MyApp.Supervisor]
