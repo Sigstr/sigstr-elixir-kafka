@@ -44,6 +44,14 @@ Production Kafka brokers are specified by environment variable:
 
 Implement one or more GenConsumers in your project as described in the [KafkaEx docs](https://hexdocs.pm/kafka_ex/KafkaEx.GenConsumer.html#content).
 
+### AND/OR
+
+Produce messages to Kafka:
+
+```elixir
+SigstrKafkaMonitor.produce("your.topic", [%{key: "kafka message key", value: "kafka message payload"}])
+```
+
 ## Step 5
 
 Start SigstrKafkaMonitor in `application.ex`:
