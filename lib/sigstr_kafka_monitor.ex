@@ -12,8 +12,8 @@ defmodule SigstrKafkaMonitor do
     Application.started_applications() |> Enum.any?(fn {app, _, _} -> app == :kafka_ex end) && SigstrKafka |> GenServer.call(:get_worker_ref) != nil
   end
 
-  def produce(topic, messages) when is_list(messages) do
-    SigstrKafka |> GenServer.call({:enqueue_msgs, topic, messages})
+  def produce(topic, messages) when is_binary(topic) and is_list(messages) do
+    SigstrKafka |> GenServer.cast({:enqueue_msgs, topic, messages})
     SigstrKafka |> GenServer.cast(:produce)
   end
 
@@ -124,11 +124,11 @@ defmodule SigstrKafkaMonitor do
   end
 
   @impl true
-  def handle_call({:enqueue_msgs, topic, messages}, _from, {children, refs, worker_ref, outbound_msgs, partition_counts})
+  def handle_cast({:enqueue_msgs, topic, messages}, {children, refs, worker_ref, outbound_msgs, partition_counts})
       when is_binary(topic) and is_list(messages) and length(messages) > 0 do
     existing_messages = outbound_msgs |> Map.get(topic, [])
     outbound_msgs = outbound_msgs |> Map.put(topic, existing_messages ++ messages)
-    {:reply, :ok, {children, refs, worker_ref, outbound_msgs, partition_counts}}
+    {:noreply, {children, refs, worker_ref, outbound_msgs, partition_counts}}
   end
 
   @impl true
