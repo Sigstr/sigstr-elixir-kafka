@@ -12,9 +12,11 @@ defmodule SigstrKafkaMonitor do
     Application.started_applications() |> Enum.any?(fn {app, _, _} -> app == :kafka_ex end) && SigstrKafka |> GenServer.call(:get_worker_ref) != nil
   end
 
-  def produce(topic, messages) when is_binary(topic) and is_list(messages) do
-    SigstrKafka |> GenServer.cast({:enqueue_msgs, topic, messages})
-    SigstrKafka |> GenServer.cast(:produce)
+  def produce(messages, topic) when is_binary(topic) and is_list(messages) do
+    unless length(messages) <= 0 do
+      SigstrKafka |> GenServer.cast({:enqueue_msgs, topic, messages})
+      SigstrKafka |> GenServer.cast(:produce)
+    end
   end
 
   @impl true
@@ -67,6 +69,11 @@ defmodule SigstrKafkaMonitor do
       case KafkaEx.create_worker(:kafka_ex, consumer_group: :no_consumer_group) do
         {:ok, pid} ->
           Logger.info("Monitoring KafkaEx worker at " <> inspect(pid))
+          SigstrKafka |> GenServer.cast(:produce)
+          Process.monitor(pid)
+
+        {:error, {:already_started, pid}} ->
+          Logger.info("KafkaEx worker already running at " <> inspect(pid))
           SigstrKafka |> GenServer.cast(:produce)
           Process.monitor(pid)
 
@@ -150,13 +157,28 @@ defmodule SigstrKafkaMonitor do
         messages_by_parition =
           outbound_msgs[topic]
           |> Enum.reduce(%{}, fn message, map ->
-            partition = rem(Murmur.hash_x86_32(message.key), partition_counts[topic])
+            partition =
+              case Map.has_key?(message, :key) && !is_nil(message.key) do
+                true -> rem(Murmur.hash_x86_32(message.key), partition_counts[topic])
+                false -> Enum.random(0..(partition_counts[topic] - 1))
+              end
+
             Map.put(map, partition, Map.get(map, partition, []) ++ [message])
           end)
 
+        Logger.info("KafkaEx producing to topic #{topic} partitions #{inspect(Map.keys(messages_by_parition))}")
+
         for partition <- messages_by_parition |> Map.keys() do
-          messages = messages_by_parition[partition] |> Enum.map(fn message -> %KafkaEx.Protocol.Produce.Message{key: message.key, value: message.value} end)
-          Logger.debug("KafkaEx producing to topic #{topic} partition #{partition}: " <> inspect(messages))
+          messages =
+            messages_by_parition[partition]
+            |> Enum.map(fn message ->
+              case Map.has_key?(message, :key) && !is_nil(message.key) do
+                true -> %KafkaEx.Protocol.Produce.Message{key: message.key, value: message.value}
+                false -> %KafkaEx.Protocol.Produce.Message{value: message.value}
+              end
+            end)
+
+          Logger.debug(inspect(messages))
           KafkaEx.produce(%KafkaEx.Protocol.Produce.Request{topic: topic, partition: partition, messages: messages})
         end
       end
