@@ -90,14 +90,14 @@ defmodule SigstrKafkaMonitor do
     {children, refs, worker_ref, partition_counts} =
       case DynamicSupervisor.start_child(SigstrKafkaMonitor.DynamicSupervisor, child_spec) do
         {:ok, pid} ->
-          Logger.info("Monitoring #{inspect(child_spec)} at #{inspect(pid)}")
+          Logger.info("KafkaEx monitoring #{inspect(child_spec)} at #{inspect(pid)}")
           ref = Process.monitor(pid)
           refs = Map.put(refs, ref, child_spec)
           children = Map.put(children, child_spec, pid)
           {children, refs, worker_ref, partition_counts}
 
         {:error, error} ->
-          Logger.warn("#{inspect(child_spec)} failed to start. Restarting in #{@restart_wait_seconds} seconds...")
+          Logger.warn("KafkaEx #{inspect(child_spec)} failed to start. Restarting in #{@restart_wait_seconds} seconds...")
           Logger.debug(inspect(error))
           Process.send_after(self(), {:start_child, child_spec}, @restart_wait_seconds * 1000)
           {children, refs, worker_ref, partition_counts}
@@ -115,7 +115,7 @@ defmodule SigstrKafkaMonitor do
     else
       {child_spec, refs} = Map.pop(refs, ref)
       children = Map.delete(children, child_spec)
-      Logger.warn("#{inspect(child_spec)} went down. Restarting in #{@restart_wait_seconds} seconds...")
+      Logger.warn("KafkaEx #{inspect(child_spec)} went down. Restarting in #{@restart_wait_seconds} seconds...")
       Process.send_after(self(), {:start_child, child_spec}, @restart_wait_seconds * 1000)
       {:noreply, {children, refs, worker_ref, partition_counts}}
     end
@@ -129,7 +129,7 @@ defmodule SigstrKafkaMonitor do
   @impl true
   def handle_call({:produce, topic, messages}, _from, {children, refs, worker_ref, partition_counts}) do
     unless worker_ref != nil && Application.started_applications() |> Enum.any?(fn {app, _, _} -> app == :kafka_ex end) do
-      Logger.error("Unable to produce messages #{inspect(messages)} to topic #{topic}")
+      Logger.error("KafkaEx is down and unable to produce messages to topic #{topic}")
       {:reply, :error, {children, refs, worker_ref, partition_counts}}
     else
       partition_counts =
