@@ -166,7 +166,7 @@ defmodule SigstrKafkaMonitor do
             Map.put(map, partition, Map.get(map, partition, []) ++ [message])
           end)
 
-        Logger.info("KafkaEx producing to topic #{topic} partitions #{inspect(Map.keys(messages_by_parition))}")
+        Logger.debug("KafkaEx producing to topic #{topic} partitions #{inspect(Map.keys(messages_by_parition))}")
 
         for partition <- messages_by_parition |> Map.keys() do
           messages =
