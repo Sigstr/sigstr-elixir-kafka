@@ -6,7 +6,7 @@ defmodule SigstrElixirKafka.MixProject do
       app: :sigstr_elixir_kafka,
       version: "0.1.0",
       elixir: "~> 1.6",
-      start_permanent: Mix.env() == :prod,
+      start_permanent: false,
       deps: deps()
     ]
   end
@@ -23,7 +23,7 @@ defmodule SigstrElixirKafka.MixProject do
     [
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"},
-      {:kafka_ex, "~> 0.8.3", runtime: false},
+      {:kafka_ex, "~> 0.8.3"},
       {:murmur, "~>1.0"}
     ]
   end
