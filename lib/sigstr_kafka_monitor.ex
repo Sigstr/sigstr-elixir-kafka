@@ -20,7 +20,7 @@ defmodule SigstrKafkaMonitor do
 
   @impl true
   def init(child_specs) do
-    Application.ensure_all_started(:kafka_ex, :temporary)
+    Application.start(:kafka_ex, :temporary)
     children = %{}
     refs = %{}
     worker_ref = nil
@@ -62,7 +62,7 @@ defmodule SigstrKafkaMonitor do
 
   @impl true
   def handle_info(:start_worker, {children, refs, worker_ref, partition_counts}) do
-    Application.ensure_all_started(:kafka_ex, :temporary)
+    Application.start(:kafka_ex, :temporary)
 
     worker_ref =
       case KafkaEx.create_worker(:kafka_ex, consumer_group: :no_consumer_group) do
@@ -86,7 +86,7 @@ defmodule SigstrKafkaMonitor do
 
   @impl true
   def handle_info({:start_child, child_spec}, {children, refs, worker_ref, partition_counts}) do
-    Application.ensure_all_started(:kafka_ex, :temporary)
+    Application.start(:kafka_ex, :temporary)
 
     {children, refs, worker_ref, partition_counts} =
       case DynamicSupervisor.start_child(SigstrKafkaMonitor.DynamicSupervisor, child_spec) do
