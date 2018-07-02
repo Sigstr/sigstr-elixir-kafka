@@ -14,7 +14,11 @@ defmodule SigstrKafkaMonitor do
 
   def produce(messages, topic) when is_binary(topic) and is_list(messages) do
     unless length(messages) <= 0 do
-      SigstrKafka |> GenServer.call({:produce, topic, messages})
+      if SigstrKafka |> GenServer.call({:produce, topic, messages}) == :error do
+        Logger.warn("KafkaEx failed to produce messages to #{topic}. Waiting #{@restart_wait_seconds} seconds and trying again.")
+        Process.sleep(@restart_wait_seconds * 1000)
+        produce(messages, topic)
+      end
     end
   end
 
