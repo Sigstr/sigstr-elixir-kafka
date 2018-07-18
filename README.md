@@ -4,21 +4,20 @@ This module allows you to connect to Kafka and consume messages without crashing
 
 ## Step 1
 
-Add KafkaEx and SigstrElixirKafka to `mix.exs`:
+Add SigstrElixirKafka to `mix.exs`:
 
 ```elixir
 def deps do
   [
     # OTHER STUFF,
-    {:kafka_ex, "~> 0.8"},
-    {:sigstr_elixir_kafka, git: "git@bitbucket.org:sigstr/sigstr-elixir-kafka.git"}
+    {:sigstr_elixir_kafka, git: "https://bitbucket.org/sigstr/sigstr-elixir-kafka.git"}
   ]
 end
 ```
 
 ## Step 2
 
-`mix deps.update sigstr_elixir_kafka`
+`mix deps.get`
 
 ## Step 3
 
