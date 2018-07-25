@@ -170,7 +170,9 @@ defmodule SigstrKafkaMonitor do
         Logger.debug(inspect(messages))
 
         try do
-          KafkaEx.produce(%KafkaEx.Protocol.Produce.Request{topic: topic, partition: partition, messages: messages, required_acks: 0, timeout: 10000})
+          payload = %KafkaEx.Protocol.Produce.Request{topic: topic, partition: partition, messages: messages, required_acks: 0, timeout: 10000}
+          Logger.debug(inspect(payload))
+          KafkaEx.produce(payload)
         rescue
           err in RuntimeError -> Logger.error("KafkaEx error producing to topic #{topic}: #{inspect(err)}")
         end
