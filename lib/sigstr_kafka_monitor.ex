@@ -3,7 +3,8 @@ defmodule SigstrKafkaMonitor do
   require Logger
 
   @restart_wait_seconds 60
-  @retry_produce_seconds 1
+  @retry_produce_seconds 5
+  @produce_max_tries 6
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: SigstrKafka)
@@ -16,8 +17,8 @@ defmodule SigstrKafkaMonitor do
   def produce(messages, topic) when is_binary(topic) and is_list(messages) do
     unless length(messages) <= 0 do
       if SigstrKafka |> GenServer.call({:produce, topic, messages}) == :error do
-        Logger.warn("KafkaEx failed to produce messages to #{topic}. Waiting #{@retry_produce_seconds} seconds and trying again.")
-        Process.sleep(@retry_produce_seconds * 1000)
+        Logger.warn("KafkaEx failed to produce messages to #{topic}. Waiting #{@restart_wait_seconds} seconds and trying again.")
+        Process.sleep(@restart_wait_seconds * 1000)
         produce(messages, topic)
       end
     end
@@ -55,7 +56,7 @@ defmodule SigstrKafkaMonitor do
         Application.put_env(:kafka_ex, :brokers, brokers)
     end
 
-    Logger.debug("Using Kafka brokers: " <> inspect(Application.get_env(:kafka_ex, :brokers)))
+    Logger.debug("KafkaEx using brokers: " <> inspect(Application.get_env(:kafka_ex, :brokers)))
 
     for child_spec <- child_specs do
       Process.send(self(), {:start_child, child_spec}, [])
@@ -79,8 +80,7 @@ defmodule SigstrKafkaMonitor do
           Process.monitor(pid)
 
         {:error, error} ->
-          Logger.warn("KafkaEx worker failed to start. Restarting in #{@restart_wait_seconds} seconds...")
-          Logger.debug(inspect(error))
+          Logger.warn("KafkaEx worker failed to start #{inspect(error)}. Restarting in #{@restart_wait_seconds} seconds...")
           Process.send_after(self(), :start_worker, @restart_wait_seconds * 1000)
           worker_ref
       end
@@ -102,8 +102,7 @@ defmodule SigstrKafkaMonitor do
           {children, refs, worker_ref, partition_counts}
 
         {:error, error} ->
-          Logger.warn("KafkaEx #{inspect(child_spec)} failed to start. Restarting in #{@restart_wait_seconds} seconds...")
-          Logger.debug(inspect(error))
+          Logger.warn("KafkaEx #{inspect(child_spec)} failed to start #{inspect(error)}. Restarting in #{@restart_wait_seconds} seconds...")
           Process.send_after(self(), {:start_child, child_spec}, @restart_wait_seconds * 1000)
           {children, refs, worker_ref, partition_counts}
       end
@@ -167,18 +166,31 @@ defmodule SigstrKafkaMonitor do
             end
           end)
 
-        Logger.debug(inspect(messages))
-
-        try do
-          payload = %KafkaEx.Protocol.Produce.Request{topic: topic, partition: partition, messages: messages, required_acks: 0, timeout: 10000}
-          Logger.debug(inspect(payload))
-          KafkaEx.produce(payload)
-        rescue
-          err in RuntimeError -> Logger.error("KafkaEx error producing to topic #{topic}: #{inspect(err)}")
-        end
+        payload = %KafkaEx.Protocol.Produce.Request{topic: topic, partition: partition, messages: messages, required_acks: 0, timeout: 10000}
+        Logger.debug("KafkaEx producing payload #{inspect(payload)}")
+        produce_with_retry(payload)
       end
 
       {:reply, :ok, {children, refs, worker_ref, partition_counts}}
+    end
+  end
+
+  defp produce_with_retry(payload, tries \\ 0) do
+    case KafkaEx.produce(payload) do
+      :ok ->
+        Logger.debug("success")
+
+      {:ok, _} ->
+        Logger.debug("success")
+
+      err ->
+        if tries >= @produce_max_tries do
+          Logger.error("KafkaEx failed #{tries} times to produce payload #{inspect(payload)}")
+        else
+          Logger.warn("KafkaEx received #{inspect(err)} when trying to produce payload #{inspect(payload)} and will retry in #{@retry_produce_seconds} seconds")
+          Process.sleep(@retry_produce_seconds * 1000)
+          produce_with_retry(payload, tries + 1)
+        end
     end
   end
 
