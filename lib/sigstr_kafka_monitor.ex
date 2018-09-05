@@ -166,7 +166,7 @@ defmodule SigstrKafkaMonitor do
             end
           end)
 
-        payload = %KafkaEx.Protocol.Produce.Request{topic: topic, partition: partition, messages: messages, required_acks: 0, timeout: 10000}
+        payload = %KafkaEx.Protocol.Produce.Request{topic: topic, partition: partition, messages: messages, required_acks: 1, timeout: 10000}
         Logger.debug("KafkaEx producing payload #{inspect(payload)}")
         produce_with_retry(payload)
       end
