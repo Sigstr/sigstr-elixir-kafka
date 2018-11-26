@@ -11,7 +11,7 @@ defmodule SigstrKafkaMonitor do
   end
 
   def up?() do
-    Application.started_applications() |> Enum.any?(fn {app, _, _} -> app == :kafka_ex end) && SigstrKafka |> GenServer.call(:get_worker_ref) != nil
+    Application.started_applications() |> Enum.any?(fn {app, _, _} -> app == :kafka_ex end)
   end
 
   def produce(messages, topic) when is_binary(topic) and is_list(messages) do
@@ -123,11 +123,6 @@ defmodule SigstrKafkaMonitor do
       Process.send_after(self(), {:start_child, child_spec}, @restart_wait_seconds * 1000)
       {:noreply, {children, refs, worker_ref, partition_counts}}
     end
-  end
-
-  @impl true
-  def handle_call(:get_worker_ref, _from, {children, refs, worker_ref, partition_counts}) do
-    {:reply, worker_ref, {children, refs, worker_ref, partition_counts}}
   end
 
   @impl true
