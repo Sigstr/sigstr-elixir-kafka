@@ -26,6 +26,7 @@ defmodule SigstrKafkaMonitor do
 
   @impl true
   def init(child_specs) do
+    Application.ensure_started(:kafka_ex)
     children = %{}
     refs = %{}
     worker_ref = nil
