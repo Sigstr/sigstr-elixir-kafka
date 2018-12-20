@@ -1,5 +1,5 @@
 %{
-  "kafka_ex": {:hex, :kafka_ex, "0.8.2", "cd8968c542b06d215e8ddaf20b0be1b8c1054d3c1dfc121355e677d1cac5eab1", [:mix], [], "hexpm"},
+  "kafka_ex": {:hex, :kafka_ex, "0.9.0", "d653b38f2584627965c71a118d9be69bf6bd3174d5f3dca29e071c928af2f53a", [:mix], [], "hexpm"},
   "murmur": {:hex, :murmur, "1.0.0", "373d7e9bb1d6be7dd39e4fa7d8f90d5a1ba4437c9d149f468af8d89c116b97ee", [:mix], [], "hexpm"},
   "wormhole": {:hex, :wormhole, "2.3.0", "5539d538b87fd70fd2b9cd95b8ce8b272c38aa4adf18690cbe8d1736c56054b6", [:mix], [], "hexpm"},
 }
