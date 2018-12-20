@@ -171,22 +171,27 @@ defmodule SigstrKafkaMonitor do
     end
   end
 
-  defp produce_with_retry(payload, tries \\ 0) do
-    case KafkaEx.produce(payload) do
-      :ok ->
-        Logger.debug("success")
+  defp produce_with_retry(payload) do
+    result =
+      Wormhole.capture(
+        fn ->
+          case KafkaEx.produce(payload) do
+            :ok -> Logger.debug("success")
+            {:ok, _} -> Logger.debug("success")
+          end
+        end,
+        retry_count: 5,
+        backoff_ms: 1_000
+      )
 
-      {:ok, _} ->
-        Logger.debug("success")
+    case result do
+      {:error, error} ->
+        Logger.error("KafkaEx error #{inspect(error)} while producing kafka message #{inspect(payload)}")
+        Honeybadger.notify(error)
 
-      err ->
-        if tries >= @produce_max_tries do
-          Logger.error("KafkaEx failed #{tries} times to produce payload #{inspect(payload)}")
-        else
-          Logger.warn("KafkaEx received #{inspect(err)} when trying to produce payload #{inspect(payload)} and will retry in #{@retry_produce_seconds} seconds")
-          Process.sleep(@retry_produce_seconds * 1000)
-          produce_with_retry(payload, tries + 1)
-        end
+      # it worked
+      _ ->
+        nil
     end
   end
 

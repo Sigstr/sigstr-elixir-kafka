@@ -24,7 +24,8 @@ defmodule SigstrElixirKafka.MixProject do
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"},
       {:kafka_ex, "~> 0.8", runtime: false},
-      {:murmur, "~>1.0"}
+      {:murmur, "~>1.0"},
+      {:wormhole, "~> 2.3"}
     ]
   end
 end
